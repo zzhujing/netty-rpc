@@ -42,8 +42,10 @@ public class RpcServicesRegistry {
         List<Node> nodes = JSON.parseArray(String.valueOf(nodesJson), Node.class);
         if(CollUtil.isEmpty(nodes))
             nodes = Lists.newArrayList();
-        nodes.add(node);
-        redisClient.put(KEY, servicesName, JSON.toJSONString(nodes));
+        if (!nodes.contains(node)) {
+            nodes.add(node);
+            redisClient.put(KEY, servicesName, JSON.toJSONString(nodes));
+        }
     }
 
     /**

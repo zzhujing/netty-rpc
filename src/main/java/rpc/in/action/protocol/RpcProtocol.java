@@ -19,7 +19,6 @@ public class RpcProtocol implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private ListenableFuture<Object> future;
     /**
      * 服务名
      */

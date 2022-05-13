@@ -9,6 +9,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import rpc.in.action.consumer.loadbalancer.LoadBalancer;
+import rpc.in.action.consumer.loadbalancer.RoundRobinLoadBalancer;
 import rpc.in.action.core.NoProviderServicesException;
 import rpc.in.action.core.Node;
 import rpc.in.action.core.handler.RpcProtocolDecoder;
@@ -18,7 +20,6 @@ import rpc.in.action.protocol.RpcProtocol;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * rpc服务调用客户端
@@ -29,18 +30,24 @@ public class RpcClient {
      * rpc服务注册表(redis实现)
      */
     private static final RpcServicesRegistry rpcServicesRegistry = new RpcServicesRegistry();
-    public static final AtomicInteger incr = new AtomicInteger();
+
 
     private final EventLoopGroup group;
+    /**
+     * 负载均衡策略
+     */
+    private LoadBalancer loadBalancer;
     private ChannelFuture cf;
 
-    public RpcClient() {
+    public RpcClient(String servicesName) {
         this.group = new NioEventLoopGroup(1);
         this.cf = cf;
+        this.loadBalancer = new RoundRobinLoadBalancer(servicesName);
     }
 
     /**
      * 同步调用
+     *
      * @param protocol
      * @return
      */
@@ -51,6 +58,7 @@ public class RpcClient {
 
     /**
      * 异步调用
+     *
      * @param rpcProtocol
      * @return
      */
@@ -80,7 +88,8 @@ public class RpcClient {
         if (CollUtil.isEmpty(nodes)) {
             throw new NoProviderServicesException();
         }
-        Node node = nodes.get(incr.getAndIncrement() % nodes.size());
+        //负载均衡
+        Node node = loadBalancer.choose(nodes);
         this.cf = bootstrap.connect(node.getHostname(), node.getPort()).syncUninterruptibly();
         //发送请求
         return completableFuture;

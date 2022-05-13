@@ -27,7 +27,7 @@ public class RpcInterceptor implements InvocationHandler {
                 .requestId(RandomUtil.randomString(10))
                 .build();
         //构建连接进行调用
-        RpcClient client = new RpcClient();
+        RpcClient client = new RpcClient(request.getServicesName());
         CompletableFuture<Object> cf = client.execAsync(request);
         System.out.println("success");
         return cf.join();
